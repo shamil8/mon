@@ -16,7 +16,7 @@
           </el-option>
         </el-select>
 
-        <span v-if="loader">Loading...</span>
+        <span v-if="loader">Загрузка...</span>
         <el-select
                 v-else-if="coordinates.length"
                 v-model="coordinateValue"
@@ -33,39 +33,45 @@
         </el-select>
 
 
-        <span v-if="serialLoader">Loading...</span>
+        <span v-if="serialLoader">Загрузка...</span>
         <el-select v-else-if="serialNumbers.length"
                    v-model="serialValue"
                    class="cordinate"
                    placeholder="Серийный номер"
+                   @change="setPeriod"
         >
           <el-option
                   v-for="item in serialNumbers"
-                  :key="item"
-                  :label="item"
-                  :value="item"
+                  :key="item.serial"
+                  :label="item.serial"
+                  :value="item.serial"
           />
         </el-select>
 
         <div v-if="serialValue" class="data-range">
           <span class="demonstration">Период</span>
           <el-date-picker
-                  v-model="value2"
+                  v-model="periodValue"
                   type="daterange"
                   align="right"
                   start-placeholder="От"
-                  end-placeholder="До">
+                  end-placeholder="До"
+                  @change="setGraph"
+                  :picker-options="datePickerOptions"
+          />
 <!--            default-value="2010-10-01"    -->
-          </el-date-picker>
         </div>
 
       </div>
     </el-card>
+
+    <e-chart class="e-chart"/>
   </div>
 </template>
 
 <script>
   import axios from 'axios'
+  import eChart from './components/e-chart'
 export default {
   name: 'App',
   data() {
@@ -90,10 +96,18 @@ export default {
       meterValue: '',
       coordinateValue: '',
       serialValue: '',
-      value2: ''
+      periodValue: '',
+      dateStart: null,
+      dateEnd: null,
+      datePickerOptions: {
+        disabledDate: this.disabledDueDate
+      }
     }
   },
   methods: {
+    disabledDueDate(date) {
+      return !(date >= this.dateStart && date <= this.dateEnd)
+    },
     setCoordinate(value) {
       this.clearCoordinate(true)
       this.clearSerialNumber(false)
@@ -112,6 +126,21 @@ export default {
               .then(() => this.serialLoader = false)
 
     },
+    setPeriod(value) {
+      const serialObj = this.serialNumbers.find(item => item.serial === value)
+
+      this.dateStart = new Date(serialObj.dateStart)
+      this.dateEnd = new Date(serialObj.dateEnd)
+      this.periodValue = [this.dateStart, this.dateEnd]
+
+      this.datePickerOptions.disabledDate(this.dateStart)
+
+      this.setGraph()
+    },
+    setGraph() {
+      console.log(this.periodValue)
+      console.log(this.serialValue)
+    },
     clearCoordinate(status) {
       this.coordinates = []
       this.coordinateValue = ''
@@ -124,7 +153,7 @@ export default {
     }
   },
   components: {
-
+    eChart
   }
 }
 </script>
@@ -143,6 +172,11 @@ export default {
     .demonstration {
       margin-right: 15px;
     }
+  }
+
+  // Chart style
+  .e-chart {
+    margin-top: 20px;
   }
 }
 </style>
