@@ -70,7 +70,7 @@
   import axios from 'axios'
   import eChart from './components/e-chart'
 
-  const url = 'http://localhost:3000/'
+  const url = 'https://json-server.adib.vercel.app/'
 
 export default {
   name: 'App',
