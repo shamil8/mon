@@ -33,10 +33,6 @@
             lineObj2: {
                 type: Object,
                 default: () => ({})
-            },
-            lineObj3: {
-                type: Object,
-                default: () => ({})
             }
         },
         data() {
@@ -119,12 +115,6 @@
                             tiled : 'Общее количество',
                             areaStyle: {normal: {}},
                             data: this.lineObj2.dataY
-                        },
-                        {
-                            name: this.lineObj3.name,
-                            type: 'line',
-                            areaStyle: {normal: {}},
-                            data: this.lineObj3.dataY
                         }
                     ]
                 }

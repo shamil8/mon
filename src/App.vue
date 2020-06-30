@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <h1 class="h1-app">Система климатического мониторинга</h1>
+    <h1 class="h1-app">Система климатического мониторинга &#174;</h1>
     <el-card class="box-card">
       <div slot="header" class="clearfix">
         <el-select v-model="meterValue" @change="setCoordinate" placeholder="Тип измерителя">
@@ -46,14 +46,13 @@
       <div v-if="serialValue">
         <span class="p-app">Сравнения и фильтры</span>
         <p>Сравнить с значениями других приборов</p>
-        <el-checkbox-group v-model="checkList">
-          <el-checkbox
-                  v-for="item in serialNumbers"
-                  :label=item.serial
-                  :key="item.serial"
-                  :disabled="item.serial === serialValue"
+        <el-radio-group v-model="line2" @change="addLine">
+          <el-radio v-for="item in serialNumbers"
+                    :label=item.serial
+                    :key="item.serial"
+                    :disabled="item.serial === serialValue"
           />
-        </el-checkbox-group>
+        </el-radio-group>
       </div>
     </el-card>
 
@@ -61,6 +60,7 @@
     <e-chart v-else-if="serialValue"
              class="e-chart"
              :line-obj1="{name: serialValue, dataX: lineObj1.date, dataY: lineObj1.dataY}"
+             :line-obj2="{name: line2, dataX: lineObj2.date, dataY: lineObj2.dataY}"
     />
 
   </div>
@@ -94,11 +94,12 @@ export default {
       }],
       coordinates: [],
       serialNumbers: [],
-      checkList: [],
+      lineObj1: {},
+      lineObj2: {},
       meterValue: '',
       coordinateValue: '',
       serialValue: '',
-      lineObj1: {}
+      line2: ''
     }
   },
   methods: {
@@ -121,11 +122,20 @@ export default {
 
     },
     setGraph(value) {
-      this.checkList.push(value)
       this.clearChart(true)
+      this.line2 = value
 
       axios.get(url + this.serialValue)
               .then(res => this.lineObj1 = res.data)
+              .catch(err => err.response && console.log(err.response.status))
+              .then(() => this.chartLoader = false)
+    },
+    addLine(value) {
+      this.lineObj2 = {}
+      this.chartLoader = true
+
+      axios.get(url + value)
+              .then(res => this.lineObj2 = res.data)
               .catch(err => err.response && console.log(err.response.status))
               .then(() => this.chartLoader = false)
     },
