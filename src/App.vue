@@ -1,12 +1,8 @@
 <template>
   <div id="app">
+    <h1 class="h1-app">Система климатического мониторинга</h1>
     <el-card class="box-card">
       <div slot="header" class="clearfix">
-        <span>Фильтры</span>
-
-<!--        <el-button style="float: right; padding: 3px 0" type="text">Operation button</el-button>-->
-      </div>
-      <div>
         <el-select v-model="meterValue" @change="setCoordinate" placeholder="Тип измерителя">
           <el-option
                   v-for="meter in meterTypes"
@@ -32,13 +28,12 @@
           />
         </el-select>
 
-
         <span v-if="serialLoader">Загрузка...</span>
         <el-select v-else-if="serialNumbers.length"
                    v-model="serialValue"
                    class="cordinate"
                    placeholder="Серийный номер"
-                   @change="setPeriod"
+                   @change="setGraph"
         >
           <el-option
                   v-for="item in serialNumbers"
@@ -47,37 +42,43 @@
                   :value="item.serial"
           />
         </el-select>
-
-        <div v-if="serialValue" class="data-range">
-          <span class="demonstration">Период</span>
-          <el-date-picker
-                  v-model="periodValue"
-                  type="daterange"
-                  align="right"
-                  start-placeholder="От"
-                  end-placeholder="До"
-                  @change="setGraph"
-                  :picker-options="datePickerOptions"
+      </div>
+      <div v-if="serialValue">
+        <span class="p-app">Сравнения и фильтры</span>
+        <p>Сравнить с значениями других приборов</p>
+        <el-checkbox-group v-model="checkList">
+          <el-checkbox
+                  v-for="item in serialNumbers"
+                  :label=item.serial
+                  :key="item.serial"
+                  :disabled="item.serial === serialValue"
           />
-<!--            default-value="2010-10-01"    -->
-        </div>
-
+        </el-checkbox-group>
       </div>
     </el-card>
 
-    <e-chart class="e-chart"/>
+    <span v-if="chartLoader">Загрузка графика (большие данные)...</span>
+    <e-chart v-else-if="serialValue"
+             class="e-chart"
+             :line-obj1="{name: serialValue, dataX: lineObj1.date, dataY: lineObj1.dataY}"
+    />
+
   </div>
 </template>
 
 <script>
   import axios from 'axios'
   import eChart from './components/e-chart'
+
+  const url = 'http://localhost:3000/'
+
 export default {
   name: 'App',
   data() {
     return {
       loader: false,
       serialLoader: false,
+      chartLoader: false,
       meterTypes: [{
         value: 'amk',
         label: 'АМК(мгновенные)'
@@ -93,26 +94,19 @@ export default {
       }],
       coordinates: [],
       serialNumbers: [],
+      checkList: [],
       meterValue: '',
       coordinateValue: '',
       serialValue: '',
-      periodValue: '',
-      dateStart: null,
-      dateEnd: null,
-      datePickerOptions: {
-        disabledDate: this.disabledDueDate
-      }
+      lineObj1: {}
     }
   },
   methods: {
-    disabledDueDate(date) {
-      return !(date >= this.dateStart && date <= this.dateEnd)
-    },
     setCoordinate(value) {
       this.clearCoordinate(true)
       this.clearSerialNumber(false)
 
-      axios.get('http://localhost:3000/' + value)
+      axios.get(url + value)
               .then(res => this.coordinates = res.data)
               .catch(err => err.response && console.log(err.response.status))
               .then(() => this.loader = false)
@@ -120,26 +114,20 @@ export default {
     setSerialNumber(value) {
       this.clearSerialNumber(true)
 
-      axios.get('http://localhost:3000/' + this.meterValue + value)
+      axios.get(url + this.meterValue + value)
               .then(res => this.serialNumbers = res.data)
               .catch(err => err.response && console.log(err.response.status))
               .then(() => this.serialLoader = false)
 
     },
-    setPeriod(value) {
-      const serialObj = this.serialNumbers.find(item => item.serial === value)
+    setGraph(value) {
+      this.checkList.push(value)
+      this.clearChart(true)
 
-      this.dateStart = new Date(serialObj.dateStart)
-      this.dateEnd = new Date(serialObj.dateEnd)
-      this.periodValue = [this.dateStart, this.dateEnd]
-
-      this.datePickerOptions.disabledDate(this.dateStart)
-
-      this.setGraph()
-    },
-    setGraph() {
-      console.log(this.periodValue)
-      console.log(this.serialValue)
+      axios.get(url + this.serialValue)
+              .then(res => this.lineObj1 = res.data)
+              .catch(err => err.response && console.log(err.response.status))
+              .then(() => this.chartLoader = false)
     },
     clearCoordinate(status) {
       this.coordinates = []
@@ -150,6 +138,10 @@ export default {
       this.serialNumbers = []
       this.serialValue = ''
       this.serialLoader = status
+    },
+    clearChart(status) {
+      this.lineObj1 = {}
+      this.chartLoader = status
     }
   },
   components: {
@@ -177,6 +169,16 @@ export default {
   // Chart style
   .e-chart {
     margin-top: 20px;
+  }
+
+  .h1-app {
+    font-weight: 400;
+    color: #1f2f3d;
+  }
+  .p-app {
+    font-size: 14px;
+    color: #5e6d82;
+    line-height: 1.5em;
   }
 }
 </style>
